@@ -4,7 +4,7 @@ from google.appengine.api import taskqueue
 from wp_import import *
 from model import *
 import logging,math
-from django.utils import simplejson
+import json
 from base import BaseRequestHandler,urldecode
 
 
@@ -31,9 +31,9 @@ class waphandler(BaseRequestHandler):
 				msg="importing entry '%s'"%imt.cur_do[1]['title']
 			else:
 				msg="start importing..."
-			self.write(simplejson.dumps((process,msg,not process==100)))
+			self.write(json.dumps((process,msg,not process==100)))
 		else:
-			self.write(simplejson.dumps((-1,"Have no data to import!",False)))
+			self.write(json.dumps((-1,"Have no data to import!",False)))
 
 	def post(self):
 		if not self.is_login:

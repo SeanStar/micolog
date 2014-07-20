@@ -262,10 +262,10 @@ class BaseRequestHandler(webapp.RequestHandler):
         self.response.out.write(content)
 
     def get_render(self,template_file,values):
-        if self.isPhone():
-            template_file=os.path.join('m',template_file+".html")
-        else:
-            template_file=template_file+".html"
+        # if self.isPhone():
+            # template_file=os.path.join('m',template_file+".html")
+        # else:
+        template_file=template_file+".html"
         self.template_vals.update(values)
         logging.info("-----------------")
         try:

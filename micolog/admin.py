@@ -3,7 +3,7 @@ import os,sys
 import wsgiref.handlers
 from django.conf import settings
 settings._target = None
-from django.utils import simplejson
+import json
 from django.utils.translation import ugettext as _
 import base,theme,utils
 from model import *
@@ -1061,7 +1061,7 @@ class UploadEx(base.BaseRequestHandler):
         bits = self.param('userfile')
         media=Media(name = name, mtype = mtype, bits = bits)
         media.put()
-        self.write(simplejson.dumps({'name':media.name,'size':media.size,'id':str(media.key())}))
+        self.write(json.dumps({'name':media.name,'size':media.size,'id':str(media.key())}))
 
 class FileManager(base.BaseRequestHandler):
     def setup(self):

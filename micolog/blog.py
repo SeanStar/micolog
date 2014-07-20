@@ -8,7 +8,7 @@ import wsgiref.handlers
 
 from datetime import timedelta
 import random
-from django.utils import simplejson
+import json
 from google.appengine.api import users
 from app.safecode import Image
 from app.gmemsess import Session
@@ -444,10 +444,40 @@ class Post_comment(BaseRequestHandler):
         ismobile=self.paramint('ismobile')==1
         #if not self.is_login:
         #    if useajax:
-        #            self.write(simplejson.dumps((False,-102,_('You must login before comment.')),ensure_ascii = False))
+        #            self.write(json.dumps((False,-102,_('You must login before comment.')),ensure_ascii = False))
         #    else:
         #            self.error(-102,_('You must login before comment .'))
         #    return
+        if not self.is_login:
+            sess=Session(self,timeout=180)
+            try:
+                check_ret=True
+                if self.blog.comment_check_type==1:
+                    checkret=self.param('checkret')
+                    check_ret=(int(checkret) == sess['code'])
+                elif self.blog.comment_check_type==2:
+                    checkret=self.param('checkret')
+                    check_ret=(str(checkret) == sess['icode'])
+                elif  self.blog.comment_check_type ==3:
+                    import app.gbtools as gb
+                    checknum=self.param('checknum')
+                    checkret=self.param('checkret')
+                    check_ret=eval(checknum)==int(gb.stringQ2B( checkret))
+
+                if not check_ret:
+                    if useajax:
+                        self.write(json.dumps((False,-102,_('Your check code is invalid .')),ensure_ascii = False))
+                    else:
+                        self.error(-102,_('Your check code is invalid .'))
+                    return
+            except Exception,e:
+                if useajax:
+                    self.write(json.dumps((False,-102,_('Your check code is invalid .')+unicode(e)),ensure_ascii = False))
+                else:
+                    self.error(-102,_('Your check code is invalid .'))
+                return
+
+            sess.invalidate()
 
         if self.is_login:
             name=self.login_user.nickname()
@@ -469,7 +499,7 @@ class Post_comment(BaseRequestHandler):
 
         if not (name and email and content):
             if useajax:
-                self.write(simplejson.dumps((False,-101,_('Please input comment .'))))
+                self.write(json.dumps((False,-101,_('Please input comment .'))))
             else:
                 self.error(-101,_('Please input comment .'))
         else:
@@ -499,10 +529,10 @@ class Post_comment(BaseRequestHandler):
                 #self.response.headers.add_header( 'Set-Cookie', cookiestr)
                 if useajax:
                     if ismobile:
-                        self.write(simplejson.dumps((True,'')))
+                        self.write(json.dumps((True,'')))
                     else:
                         comment_c=self.get_render('comment',{'comment':comment})
-                        self.write(simplejson.dumps((True,comment_c),ensure_ascii = False))
+                        self.write(json.dumps((True,comment_c),ensure_ascii = False))
                 else:
                     self.redirect(self.referer+"#comment-"+str(comment.key().id()))
 
@@ -511,7 +541,7 @@ class Post_comment(BaseRequestHandler):
             except Exception,e:
                 logging.error(e)
                 if useajax:
-                    self.write(simplejson.dumps((False,-103,_('Comment not allowed.'))))
+                    self.write(json.dumps((False,-103,_('Comment not allowed.'))))
                 else:
                     self.error(-102,_('Comment not allowed .'))
 
@@ -522,7 +552,7 @@ class Post_comment(BaseRequestHandler):
 ##        if not self.blog.allow_guest_comment:
 ##            if not self.is_login:
 ##                if useajax:
-##                        self.write(simplejson.dumps((False,-102,_('You must login before comment.')),ensure_ascii = False))
+##                        self.write(json.dumps((False,-102,_('You must login before comment.')),ensure_ascii = False))
 ##                else:
 ##                        self.error(-102,_('You must login before comment .'))
 ##                return
@@ -561,13 +591,13 @@ class Post_comment(BaseRequestHandler):
 ##
 ##                if not check_ret:
 ##                    if useajax:
-##                        self.write(simplejson.dumps((False,-102,_('Your check code is invalid .')),ensure_ascii = False))
+##                        self.write(json.dumps((False,-102,_('Your check code is invalid .')),ensure_ascii = False))
 ##                    else:
 ##                        self.error(-102,_('Your check code is invalid .'))
 ##                    return
 ##            except Exception,e:
 ##                if useajax:
-##                    self.write(simplejson.dumps((False,-102,_('Your check code is invalid .')+unicode(e)),ensure_ascii = False))
+##                    self.write(json.dumps((False,-102,_('Your check code is invalid .')+unicode(e)),ensure_ascii = False))
 ##                else:
 ##                    self.error(-102,_('Your check code is invalid .'))
 ##                return
@@ -580,7 +610,7 @@ class Post_comment(BaseRequestHandler):
 ##
 ##        if not (name and email and content):
 ##            if useajax:
-##                        self.write(simplejson.dumps((False,-101,_('Please input name, email and comment .'))))
+##                        self.write(json.dumps((False,-101,_('Please input name, email and comment .'))))
 ##            else:
 ##                self.error(-101,_('Please input name, email and comment .'))
 ##        else:
@@ -618,7 +648,7 @@ class Post_comment(BaseRequestHandler):
 ##                self.response.headers.add_header( 'Set-Cookie', cookiestr)
 ##                if useajax:
 ##                    comment_c=self.get_render('comment',{'comment':comment})
-##                    self.write(simplejson.dumps((True,comment_c.decode('utf8')),ensure_ascii = False))
+##                    self.write(json.dumps((True,comment_c.decode('utf8')),ensure_ascii = False))
 ##                else:
 ##                    self.redirect(self.referer+"#comment-"+str(comment.key().id()))
 ##
@@ -626,7 +656,7 @@ class Post_comment(BaseRequestHandler):
 ##                #memcache.delete("/feed/comments")
 ##            except Exception,e:
 ##                if useajax:
-##                    self.write(simplejson.dumps((False,-103,_('Comment not allowed.')+unicode(e))))
+##                    self.write(json.dumps((False,-103,_('Comment not allowed.')+unicode(e))))
 ##                else:
 ##                    self.error(-102,_('Comment not allowed .'+str(e)))
 class ChangeTheme(BaseRequestHandler):
@@ -663,11 +693,11 @@ class do_action(BasePublicPage):
     @ajaxonly
     def action_info_login(self):
         if self.login_user:
-            self.write(simplejson.dumps({'islogin':True,
+            self.write(json.dumps({'islogin':True,
                                          'isadmin':self.is_admin,
                                          'name': self.login_user.nickname()}))
         else:
-            self.write(simplejson.dumps({'islogin':False}))
+            self.write(json.dumps({'islogin':False}))
 
 ##    #@hostonly
 ##
@@ -691,7 +721,7 @@ class do_action(BasePublicPage):
             html=self.get_render('comments',vals)
             self.write(html)
         get_comments(self,key)
-        #self.write(simplejson.dumps(html.decode('utf8')))
+        #self.write(json.dumps(html.decode('utf8')))
         
     def action_getcomments_more(self):
         key=self.param('key')

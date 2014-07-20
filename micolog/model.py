@@ -569,7 +569,7 @@ class Entry(BlogModel):
         @object_memcache("entry.categories",cache_key=(self.vkey),entry_id=self.vkey)
         def _categories():
             try:
-                return ndb.get(self.categorie_keys)
+                return ndb.get_multi(self.categorie_keys)
             except:
                 return []
         return _categories()
